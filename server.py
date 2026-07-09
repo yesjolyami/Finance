@@ -24,7 +24,7 @@ VALID_TYPES = {"expense", "income"}
 DEFAULT_ACCOUNTS = [
     ("account-shared", "Общий", "#fb96ff", 1, 1),
     ("account-rina", "Котик Рины", "#173921", 2, 1),
-    ("account-valera", "Котик Валеры", "#4f6078", 3, 1),
+    ("account-valera", "Котик Валеры", "#82dde9", 3, 1),
 ]
 
 DEFAULT_CATEGORIES = [
