@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Мои финансы</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23302f2b'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='34' font-family='Arial' font-weight='700' fill='%23ccc7b1'%3E%E2%82%BD%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side">
+        <div class="brand" aria-label="Мои финансы">
+          <span class="brand-mark">₽</span>
+          <div>
+            <strong>Мои финансы</strong>
+            <small>Локальный учет</small>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Разделы">
+          <a href="#overview">Обзор</a>
+          <a href="#accounts">Счета</a>
+          <a href="#entry">Операции</a>
+          <a href="#stats">Статистика</a>
+          <a href="#categories">Категории</a>
+        </nav>
+
+        <div class="local-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>SQLite хранится локально: <code>finance.db</code></span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Personal ledger</p>
+            <h1>Финансовая панель</h1>
+          </div>
+
+          <div class="topbar-actions">
+            <button
+              class="button ghost theme-toggle"
+              id="themeToggle"
+              type="button"
+              aria-pressed="false"
+            >
+              Темная тема
+            </button>
+            <label class="field compact">
+              <span>Месяц</span>
+              <input id="monthFilter" type="month" />
+            </label>
+            <label class="field compact export-field">
+              <span>Экспорт</span>
+              <select id="exportFormat" aria-label="Формат экспорта">
+                <option value="csv">CSV для Excel/Numbers</option>
+                <option value="png">PNG отчет</option>
+                <option value="json">JSON база</option>
+              </select>
+            </label>
+            <button class="button ghost" id="exportButton" type="button">Скачать</button>
+            <label class="button ghost file-button" for="importFile">
+              Импорт
+              <input id="importFile" type="file" accept="application/json" />
+            </label>
+          </div>
+        </header>
+
+        <section class="accounts-strip" id="accounts" aria-label="Счета">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Accounts</p>
+              <h2>Счета</h2>
+            </div>
+            <span id="accountScopeLabel">Показаны все счета</span>
+          </div>
+          <div class="account-grid" id="accountGrid"></div>
+        </section>
+
+        <section class="summary-grid" id="overview" aria-label="Сводка за месяц">
+          <article class="metric primary">
+            <span>Баланс месяца</span>
+            <strong id="summaryBalance">0 ₽</strong>
+            <small id="balanceHint">Доходы минус расходы</small>
+          </article>
+          <article class="metric">
+            <span>Доходы</span>
+            <strong id="summaryIncome">0 ₽</strong>
+            <small id="incomeHint">За выбранный месяц</small>
+          </article>
+          <article class="metric">
+            <span>Расходы</span>
+            <strong id="summaryExpense">0 ₽</strong>
+            <small id="expenseHint">Средний расход: 0 ₽</small>
+          </article>
+          <article class="metric">
+            <span>Лимит</span>
+            <strong id="summaryBudget">0%</strong>
+            <small id="budgetHint">Бюджеты по категориям</small>
+          </article>
+        </section>
+
+        <div class="workspace-grid">
+          <section class="panel entry-panel" id="entry" aria-labelledby="entryTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Ledger</p>
+                <h2 id="entryTitle">Новая операция</h2>
+              </div>
+            </div>
+
+            <form class="transaction-form" id="transactionForm">
+              <div class="segmented" role="radiogroup" aria-label="Тип операции">
+                <label>
+                  <input type="radio" name="type" value="expense" checked />
+                  <span>Расход</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="income" />
+                  <span>Доход</span>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Сумма</span>
+                  <input
+                    id="amountInput"
+                    name="amount"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Дата</span>
+                  <input id="dateInput" name="date" type="date" required />
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Счет</span>
+                  <select id="accountSelect" name="accountId" required></select>
+                </label>
+                <label class="field">
+                  <span>Категория</span>
+                  <select id="categorySelect" name="categoryId" required></select>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Комментарий</span>
+                <input
+                  id="noteInput"
+                  name="note"
+                  type="text"
+                  maxlength="160"
+                  placeholder="Например: кофе, аренда, аванс"
+                  autocomplete="off"
+                />
+              </label>
+
+              <button class="button primary" type="submit">Добавить</button>
+            </form>
+
+            <form
+              class="quick-category-form"
+              id="quickCategoryForm"
+              aria-labelledby="quickCategoryTitle"
+            >
+              <div class="quick-category-copy">
+                <div>
+                  <strong id="quickCategoryTitle">Своя категория</strong>
+                  <span id="quickCategoryTypeBadge">Для расходов</span>
+                </div>
+                <small>Создайте один раз, дальше она появится в списке.</small>
+              </div>
+
+              <div class="quick-category-grid">
+                <label class="field">
+                  <span>Название</span>
+                  <input
+                    id="quickCategoryName"
+                    name="name"
+                    type="text"
+                    maxlength="36"
+                    placeholder="Такси, подписки, фриланс"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="field color-field">
+                  <span>Цвет</span>
+                  <input id="quickCategoryColor" name="color" type="color" value="#5d704d" />
+                </label>
+              </div>
+
+              <label class="field" id="quickBudgetField">
+                <span>Лимит в месяц</span>
+                <input
+                  id="quickCategoryBudget"
+                  name="budget"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Можно оставить пустым"
+                  autocomplete="off"
+                />
+              </label>
+
+              <button class="button secondary" type="submit">Добавить категорию</button>
+            </form>
+          </section>
+
+          <section class="panel stats-panel" id="stats" aria-labelledby="statsTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Analytics</p>
+                <h2 id="statsTitle">Статистика</h2>
+              </div>
+              <span class="pill" id="savingsRate">0% сохранено</span>
+            </div>
+
+            <div class="chart-wrap">
+              <canvas id="trendChart" height="220" aria-label="Динамика доходов и расходов"></canvas>
+            </div>
+
+            <div class="split-stats">
+              <div>
+                <h3>Расходы по категориям</h3>
+                <div class="bars-list" id="categoryBreakdown"></div>
+              </div>
+              <div>
+                <h3>Бюджеты</h3>
+                <div class="bars-list" id="budgetBreakdown"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel categories-panel" id="categories" aria-labelledby="categoriesTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Structure</p>
+                <h2 id="categoriesTitle">Категории</h2>
+              </div>
+            </div>
+
+            <form class="category-form" id="categoryForm">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Название</span>
+                  <input
+                    id="categoryName"
+                    name="name"
+                    type="text"
+                    maxlength="36"
+                    placeholder="Например: Такси"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Тип</span>
+                  <select id="categoryType" name="type">
+                    <option value="expense">Расход</option>
+                    <option value="income">Доход</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Цвет</span>
+                  <input id="categoryColor" name="color" type="color" value="#5d704d" />
+                </label>
+                <label class="field">
+                  <span>Лимит в месяц</span>
+                  <input
+                    id="categoryBudget"
+                    name="budget"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    autocomplete="off"
+                  />
+                </label>
+              </div>
+
+              <button class="button secondary" type="submit">Создать категорию</button>
+            </form>
+
+            <div class="category-list" id="categoryList"></div>
+          </section>
+
+          <section class="panel ledger-panel" aria-labelledby="ledgerTitle">
+            <div class="panel-heading ledger-heading">
+              <div>
+                <p class="eyebrow">History</p>
+                <h2 id="ledgerTitle">Операции</h2>
+              </div>
+              <div class="ledger-filters" aria-label="Фильтры операций">
+                <select id="accountFilter" aria-label="Фильтр по счету">
+                  <option value="all">Все счета</option>
+                </select>
+                <select id="typeFilter" aria-label="Фильтр по типу">
+                  <option value="all">Все</option>
+                  <option value="expense">Расходы</option>
+                  <option value="income">Доходы</option>
+                </select>
+                <select id="categoryFilter" aria-label="Фильтр по категории">
+                  <option value="all">Все категории</option>
+                </select>
+                <input
+                  id="searchInput"
+                  type="search"
+                  placeholder="Поиск"
+                  aria-label="Поиск по комментарию"
+                />
+              </div>
+            </div>
+
+            <div class="transaction-list" id="transactionList"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
