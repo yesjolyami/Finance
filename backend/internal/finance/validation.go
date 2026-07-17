@@ -389,7 +389,7 @@ func normalizeTransactionPatch(input TransactionPatchInput) (TransactionPatch, e
 func validateTransactionShape(values TransactionValues) error {
 	switch values.Type {
 	case "income", "expense":
-		if values.ToAccountID != nil || (values.IsBalanceAdjustment && values.CategoryID != nil) || (!values.IsBalanceAdjustment && values.CategoryID == nil) {
+		if values.ToAccountID != nil || (!values.IsBalanceAdjustment && values.CategoryID == nil) {
 			return ErrValidation
 		}
 	case "transfer":

@@ -29,10 +29,7 @@ ALTER TABLE transactions
         (
             transaction_type IN ('income', 'expense')
             AND to_account_id IS NULL
-            AND (
-                (is_balance_adjustment AND category_id IS NULL)
-                OR (NOT is_balance_adjustment AND category_id IS NOT NULL)
-            )
+            AND (is_balance_adjustment OR category_id IS NOT NULL)
         )
         OR (
             transaction_type = 'transfer'
