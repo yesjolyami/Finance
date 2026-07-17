@@ -4,7 +4,7 @@ export type DirectoryState = "active" | "archived" | "all";
 export type TransactionState = "active" | "deleted" | "all";
 export type TransactionType = "income" | "expense" | "transfer";
 export type CategoryType = "income" | "expense";
-export type AccountType = "regular" | "savings";
+export type AccountType = "regular" | "savings" | "cash";
 
 export interface Account {
   id: string;
@@ -220,7 +220,7 @@ function parseAccount(value: unknown): Account | null {
   if (
     !isRecord(value) || !isUUID(value.id) || typeof value.name !== "string" ||
     typeof value.color !== "string" || !colorPattern.test(value.color) ||
-    !Number.isSafeInteger(value.sortOrder) || (value.accountType !== "regular" && value.accountType !== "savings") ||
+    !Number.isSafeInteger(value.sortOrder) || (value.accountType !== "regular" && value.accountType !== "savings" && value.accountType !== "cash") ||
     typeof value.bankLabel !== "string" || typeof value.legacyOwnerLabel !== "string" ||
     !(value.ownerUserId === null || isUUID(value.ownerUserId)) || value.currencyCode !== "RUB" ||
     typeof value.isSystem !== "boolean" || !isVersion(value.version) ||

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ExpectedMigrationVersion int64 = 4
+	ExpectedMigrationVersion int64 = 5
 	maxOpenConnections             = 10
 	maxIdleConnections             = 2
 	connectionMaxLifetime          = 30 * time.Minute

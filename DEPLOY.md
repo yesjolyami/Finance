@@ -99,7 +99,7 @@ FINANCE_DB=/path/to/finance.db
 
 ```ini
 [Unit]
-Description=Personal Finance App
+Description=Монетка
 After=network.target
 
 [Service]

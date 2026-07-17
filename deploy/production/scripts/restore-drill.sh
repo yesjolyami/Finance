@@ -60,13 +60,13 @@ cd "$DATABASE_TOOL_DIR"
 "$GOOSE_BIN" -version | grep -Fq 'v3.24.3'
 "$GOOSE_BIN" -dir migrations status
 version=$("$GOOSE_BIN" -dir migrations version 2>&1 | awk 'END {print $NF}')
-if [[ "$version" != "4" ]]; then
+if [[ "$version" != "5" ]]; then
   echo "restore drill migration verification failed" >&2
   exit 1
 fi
 applied=$(psql --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 \
-  --command "SELECT format('%s|%s', COALESCE(MAX(version_id) FILTER (WHERE is_applied), 0), COUNT(DISTINCT version_id) FILTER (WHERE is_applied AND version_id BETWEEN 1 AND 4)) FROM goose_db_version")
-if [[ "$applied" != "4|4" ]]; then
+  --command "SELECT format('%s|%s', COALESCE(MAX(version_id) FILTER (WHERE is_applied), 0), COUNT(DISTINCT version_id) FILTER (WHERE is_applied AND version_id BETWEEN 1 AND 5)) FROM goose_db_version")
+if [[ "$applied" != "5|5" ]]; then
   echo "restore drill migration verification failed" >&2
   exit 1
 fi
@@ -74,5 +74,6 @@ psql --no-psqlrc -v ON_ERROR_STOP=1 -f tests/schema_constraints.sql
 psql --no-psqlrc -v ON_ERROR_STOP=1 -f tests/household_invitations_constraints.sql
 psql --no-psqlrc -v ON_ERROR_STOP=1 -f tests/finance_core_idempotency_constraints.sql
 psql --no-psqlrc -v ON_ERROR_STOP=1 -f tests/backup_v5_import_control_constraints.sql
+psql --no-psqlrc -v ON_ERROR_STOP=1 -f tests/onboarding_profiles_constraints.sql
 unset GOOSE_DBSTRING
 echo "isolated restore drill completed"

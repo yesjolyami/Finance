@@ -18,6 +18,7 @@ const maxJSONBodyBytes = 64 << 10
 type HouseholdService interface {
 	Bootstrap(context.Context, string, string) (households.BootstrapResult, error)
 	GetMe(context.Context, string) (households.User, error)
+	UpdateProfile(context.Context, string, households.UpdateProfileInput) (households.User, error)
 	ListHouseholds(context.Context, string) ([]households.Household, error)
 	CreateHousehold(context.Context, string, string, string) (households.Household, error)
 	GetHousehold(context.Context, string, string) (households.Household, error)
@@ -109,7 +110,13 @@ func (app *application) apiV1(writer http.ResponseWriter, request *http.Request)
 	case len(segments) == 2 && segments[0] == "session" && segments[1] == "bootstrap":
 		app.requireMethod(writer, request, http.MethodPost, func() { app.bootstrap(writer, request, identity.Subject) })
 	case len(segments) == 1 && segments[0] == "me":
-		app.requireMethod(writer, request, http.MethodGet, func() { app.me(writer, request, identity.Subject) })
+		if request.Method == http.MethodGet {
+			app.me(writer, request, identity.Subject)
+		} else if request.Method == http.MethodPatch {
+			app.updateMe(writer, request, identity.Subject)
+		} else {
+			app.methodNotAllowed(writer, "GET, PATCH")
+		}
 	case len(segments) == 1 && segments[0] == "households":
 		if request.Method == http.MethodGet {
 			app.listHouseholds(writer, request, identity.Subject)
@@ -182,6 +189,23 @@ func (app *application) bootstrap(writer http.ResponseWriter, request *http.Requ
 
 func (app *application) me(writer http.ResponseWriter, request *http.Request, subject string) {
 	result, err := app.households.GetMe(request.Context(), subject)
+	app.writeServiceResult(writer, http.StatusOK, result, err)
+}
+
+func (app *application) updateMe(writer http.ResponseWriter, request *http.Request, subject string) {
+	var input struct {
+		DisplayName         *string `json:"displayName"`
+		UsageMode           *string `json:"usageMode"`
+		OnboardingCompleted *bool   `json:"onboardingCompleted"`
+		PrimaryCurrencyCode *string `json:"primaryCurrencyCode"`
+	}
+	if !app.decodeBody(writer, request, &input) {
+		return
+	}
+	result, err := app.households.UpdateProfile(request.Context(), subject, households.UpdateProfileInput{
+		DisplayName: input.DisplayName, UsageMode: input.UsageMode,
+		OnboardingCompleted: input.OnboardingCompleted, PrimaryCurrencyCode: input.PrimaryCurrencyCode,
+	})
 	app.writeServiceResult(writer, http.StatusOK, result, err)
 }
 

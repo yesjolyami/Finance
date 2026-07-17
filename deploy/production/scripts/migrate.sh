@@ -7,7 +7,7 @@ MIGRATION_DIR=${MIGRATION_DIR:-/opt/finance/current/database/migrations}
 DATABASE_TOOL_DIR=${DATABASE_TOOL_DIR:-/opt/finance/current/database}
 DATABASE_URL_FILE=${DATABASE_URL_FILE:-/etc/finance/secrets/database-url}
 GOOSE_BIN=${GOOSE_BIN:-/opt/finance/current/bin/goose}
-EXPECTED_VERSION=4
+EXPECTED_VERSION=5
 
 if [[ ! -d "$MIGRATION_DIR" || ! -x "$GOOSE_BIN" ]]; then
   echo "migration artifacts are unavailable" >&2

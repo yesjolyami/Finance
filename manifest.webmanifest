@@ -1,0 +1,10 @@
+{
+  "name": "Монетка",
+  "short_name": "Монетка",
+  "description": "Учёт личных финансов",
+  "lang": "ru",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ea",
+  "theme_color": "#302f2b"
+}

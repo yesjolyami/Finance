@@ -51,7 +51,7 @@ export function AuthHouseholdShell({ api, supabase }: { api: APIClient; supabase
     return <main className="page-shell page-shell--centered"><RecoveryForm supabase={supabase} offline={offline} /></main>;
   }
   if (state.phase === "signedOut" || !state.user) {
-    return <main className="page-shell auth-page"><AuthForm notice={state.notice} offline={offline} supabase={supabase} /><aside className="auth-aside" aria-label="О новой версии"><div><p className="eyebrow">Приватность по умолчанию</p><h2>Один вход.<br />Отдельные пространства.</h2></div><p>Браузер работает только с Supabase Auth. Все прикладные данные проходят через проверяющий JWT Go API.</p><span>React · Go · PostgreSQL</span></aside></main>;
+    return <main className="page-shell auth-page"><AuthForm notice={state.notice} offline={offline} supabase={supabase} /><aside className="auth-aside" aria-label="О Монетке"><div><p className="eyebrow">Монетка · приватность по умолчанию</p><h2>Один вход.<br />Отдельные пространства.</h2></div><p>Личные и общие финансы остаются аккуратно разделены и доступны только после защищённого входа.</p><span>Монетка · ваши деньги под контролем</span></aside></main>;
   }
 
   return (

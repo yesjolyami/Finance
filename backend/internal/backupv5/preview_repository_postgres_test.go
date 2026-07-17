@@ -478,7 +478,7 @@ func resetPreviewDatabase(t *testing.T, database *sql.DB) {
 		RESTART IDENTITY CASCADE
 	`)
 	if err != nil {
-		t.Fatalf("reset preview test database (migrations 00001-00004 required): %v", err)
+		t.Fatalf("reset preview test database (migrations 00001-00005 required): %v", err)
 	}
 }
 

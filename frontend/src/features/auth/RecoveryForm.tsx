@@ -52,7 +52,7 @@ export function RecoveryForm({ supabase, offline }: { supabase: SupabaseClient; 
 
   return (
     <section className="auth-card auth-card--compact" aria-labelledby="recovery-title">
-      <p className="eyebrow">Восстановление доступа</p>
+      <p className="eyebrow">Монетка · восстановление доступа</p>
       <h1 id="recovery-title">Установите новый пароль</h1>
       <form className="auth-form" onSubmit={(event) => void submit(event)}>
         <label htmlFor="recovery-password">Новый пароль</label>

@@ -55,6 +55,9 @@ type householdServiceStub struct {
 	lastTTL          int
 	lastKey          string
 	lastToken        string
+	lastUsageMode    string
+	lastCurrency     string
+	lastOnboarding   bool
 }
 
 func (service *householdServiceStub) remember(subject string) {
@@ -70,6 +73,28 @@ func (service *householdServiceStub) Bootstrap(_ context.Context, subject, displ
 func (service *householdServiceStub) GetMe(_ context.Context, subject string) (households.User, error) {
 	service.remember(subject)
 	return households.User{ID: subject, DisplayName: "Пользователь"}, service.err
+}
+
+func (service *householdServiceStub) UpdateProfile(_ context.Context, subject string, input households.UpdateProfileInput) (households.User, error) {
+	service.remember(subject)
+	user := households.User{ID: subject, DisplayName: "Пользователь", UsageMode: "personal", PrimaryCurrencyCode: "RUB"}
+	if input.DisplayName != nil {
+		user.DisplayName = *input.DisplayName
+		service.lastName = *input.DisplayName
+	}
+	if input.UsageMode != nil {
+		user.UsageMode = *input.UsageMode
+		service.lastUsageMode = *input.UsageMode
+	}
+	if input.OnboardingCompleted != nil {
+		user.OnboardingCompleted = *input.OnboardingCompleted
+		service.lastOnboarding = *input.OnboardingCompleted
+	}
+	if input.PrimaryCurrencyCode != nil {
+		user.PrimaryCurrencyCode = *input.PrimaryCurrencyCode
+		service.lastCurrency = *input.PrimaryCurrencyCode
+	}
+	return user, service.err
 }
 
 func (service *householdServiceStub) ListHouseholds(_ context.Context, subject string) ([]households.Household, error) {
@@ -280,6 +305,13 @@ func TestValidIdentityAndRouteInputsReachService(t *testing.T) {
 	server.Handler.ServeHTTP(recorder, bootstrap)
 	if recorder.Code != http.StatusOK || service.lastSubject != testSubject || verifier.lastToken != "valid-token" {
 		t.Fatalf("identity was not propagated: status=%d service=%#v", recorder.Code, service)
+	}
+
+	profile := authenticatedRequest(http.MethodPatch, "/api/v1/me", `{"displayName":"Матвей","usageMode":"couple","onboardingCompleted":true,"primaryCurrencyCode":"RUB"}`)
+	recorder = httptest.NewRecorder()
+	server.Handler.ServeHTTP(recorder, profile)
+	if recorder.Code != http.StatusOK || service.lastName != "Матвей" || service.lastUsageMode != "couple" || !service.lastOnboarding || service.lastCurrency != "RUB" {
+		t.Fatalf("profile inputs lost: status=%d service=%#v", recorder.Code, service)
 	}
 
 	create := authenticatedRequest(http.MethodPost, "/api/v1/households", `{"name":"Дом"}`)

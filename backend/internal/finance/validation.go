@@ -151,7 +151,7 @@ func normalizeAccountCreate(input CreateAccountInput) (AccountCreate, error) {
 	if accountType == "" {
 		accountType = "regular"
 	}
-	if accountType != "regular" && accountType != "savings" {
+	if accountType != "regular" && accountType != "savings" && accountType != "cash" {
 		return AccountCreate{}, ErrValidation
 	}
 	bankLabel, err := normalizeOptionalText(input.BankLabel, 120)
@@ -202,7 +202,7 @@ func normalizeAccountPatch(input AccountPatchInput) (AccountPatch, error) {
 	}
 	if input.AccountType.Present {
 		accountType := strings.TrimSpace(input.AccountType.Value)
-		if accountType != "regular" && accountType != "savings" {
+		if accountType != "regular" && accountType != "savings" && accountType != "cash" {
 			return AccountPatch{}, ErrValidation
 		}
 		result.AccountType = Field[string]{Present: true, Value: accountType}
@@ -389,7 +389,7 @@ func normalizeTransactionPatch(input TransactionPatchInput) (TransactionPatch, e
 func validateTransactionShape(values TransactionValues) error {
 	switch values.Type {
 	case "income", "expense":
-		if values.CategoryID == nil || values.ToAccountID != nil {
+		if values.ToAccountID != nil || (values.IsBalanceAdjustment && values.CategoryID != nil) || (!values.IsBalanceAdjustment && values.CategoryID == nil) {
 			return ErrValidation
 		}
 	case "transfer":

@@ -36,8 +36,10 @@ func (repository *PostgresRepository) Bootstrap(
 		SET display_name = COALESCE($2, users.display_name),
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE users.deleted_at IS NULL
-		RETURNING id::text, display_name
-	`, subject, displayName, defaultDisplayName).Scan(&user.ID, &user.DisplayName)
+		RETURNING id::text, display_name, usage_mode, onboarding_completed, primary_currency_code
+	`, subject, displayName, defaultDisplayName).Scan(
+		&user.ID, &user.DisplayName, &user.UsageMode, &user.OnboardingCompleted, &user.PrimaryCurrencyCode,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return BootstrapResult{}, ErrNotFound
 	}
@@ -58,10 +60,30 @@ func (repository *PostgresRepository) Bootstrap(
 func (repository *PostgresRepository) GetMe(ctx context.Context, subject string) (User, error) {
 	var user User
 	err := repository.database.QueryRowContext(ctx, `
-		SELECT id::text, display_name
+		SELECT id::text, display_name, usage_mode, onboarding_completed, primary_currency_code
 		FROM users
 		WHERE auth_subject = $1 AND deleted_at IS NULL
-	`, subject).Scan(&user.ID, &user.DisplayName)
+	`, subject).Scan(&user.ID, &user.DisplayName, &user.UsageMode, &user.OnboardingCompleted, &user.PrimaryCurrencyCode)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, ErrNotFound
+	}
+	return user, err
+}
+
+func (repository *PostgresRepository) UpdateProfile(ctx context.Context, subject string, input UpdateProfileInput) (User, error) {
+	var user User
+	err := repository.database.QueryRowContext(ctx, `
+		UPDATE users
+		SET display_name = COALESCE($2, display_name),
+		    usage_mode = COALESCE($3, usage_mode),
+		    onboarding_completed = COALESCE($4, onboarding_completed),
+		    primary_currency_code = COALESCE($5, primary_currency_code),
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE auth_subject = $1 AND deleted_at IS NULL
+		RETURNING id::text, display_name, usage_mode, onboarding_completed, primary_currency_code
+	`, subject, input.DisplayName, input.UsageMode, input.OnboardingCompleted, input.PrimaryCurrencyCode).Scan(
+		&user.ID, &user.DisplayName, &user.UsageMode, &user.OnboardingCompleted, &user.PrimaryCurrencyCode,
+	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrNotFound
 	}

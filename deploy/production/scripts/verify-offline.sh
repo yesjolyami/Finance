@@ -314,7 +314,7 @@ grep -Fq 'ack-isolated-empty-restore-database' "$PRODUCTION_DIR/scripts/restore-
 grep -Fq 'RESTORE_EXPECTED_DATABASE' "$PRODUCTION_DIR/scripts/restore-drill.sh"
 grep -Fq 'SELECT current_database()' "$PRODUCTION_DIR/scripts/restore-drill.sh"
 grep -Fq "n.nspname NOT IN ('pg_catalog', 'information_schema')" "$PRODUCTION_DIR/scripts/restore-drill.sh"
-grep -Fq 'if [[ "$version" != "4" ]]' "$PRODUCTION_DIR/scripts/restore-drill.sh"
+grep -Fq 'if [[ "$version" != "5" ]]' "$PRODUCTION_DIR/scripts/restore-drill.sh"
 python3 - "$PRODUCTION_DIR/scripts/restore-drill.sh" <<'PY'
 import pathlib
 import sys
