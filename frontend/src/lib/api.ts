@@ -179,7 +179,7 @@ export class APIClient {
   private readonly timeoutMilliseconds: number;
 
   public constructor(private readonly options: APIClientOptions) {
-    this.fetcher = options.fetcher ?? fetch;
+    this.fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
     this.timeoutMilliseconds = options.timeoutMilliseconds ?? 8_000;
   }
 

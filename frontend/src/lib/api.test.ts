@@ -36,6 +36,22 @@ function abortAwarePendingFetch(): typeof fetch {
 }
 
 describe("APIClient", () => {
+  it("binds the browser fetch implementation to its global object", async () => {
+    const originalFetch = globalThis.fetch;
+    const browserFetch = vi.fn(function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(jsonResponse({ user, households: [] }));
+    }) as typeof fetch;
+    globalThis.fetch = browserFetch;
+    try {
+      const client = new APIClient({ apiBaseUrl: "", sessionProvider: sessionProvider(["token"]) });
+      await expect(client.bootstrap()).resolves.toEqual({ user, households: [] });
+      expect(browserFetch).toHaveBeenCalledOnce();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("reads the current official session before every request and omits ambient credentials", async () => {
     const sessions = sessionProvider(["rotated-token-one", "rotated-token-two"]);
     const authorizations: string[] = [];
