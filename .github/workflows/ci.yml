@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: 1.26.5
+  NODE_VERSION: 24.14.0
+
+jobs:
+  legacy:
+    name: Legacy safety net
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Check the protected legacy application
+        run: |
+          python3 -m py_compile server.py
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          node --check app.js
+          node --test tests/test_financial_calculations.js
+
+  frontend:
+    name: React and TypeScript
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Test
+        run: npm test
+      - name: Type-check
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+
+  database:
+    name: PostgreSQL migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: finance_database_ci
+          POSTGRES_USER: finance
+          POSTGRES_PASSWORD: finance_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finance -d finance_database_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_TEST_URL: postgresql://finance:finance_ci_only@127.0.0.1:5432/finance_database_ci?sslmode=disable
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: database/go.sum
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends postgresql-client
+      - name: Exercise migrations and constraints
+        run: ./database/test-schema.sh
+
+  backend:
+    name: Go API
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: finance_backend_ci
+          POSTGRES_USER: finance
+          POSTGRES_PASSWORD: finance_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U finance -d finance_backend_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://finance:finance_ci_only@127.0.0.1:5432/finance_backend_ci?sslmode=disable
+      DATABASE_TEST_URL: postgresql://finance:finance_ci_only@127.0.0.1:5432/finance_backend_ci?sslmode=disable
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            backend/go.sum
+            database/go.sum
+      - name: Apply the current schema
+        working-directory: database
+        run: go tool goose -dir migrations postgres "$DATABASE_TEST_URL" up
+      - name: Check formatting
+        working-directory: backend
+        run: test -z "$(gofmt -l .)"
+      - name: Test
+        working-directory: backend
+        run: go test -count=1 -p 1 ./...
+      - name: Test with the race detector
+        working-directory: backend
+        run: go test -race -count=1 -p 1 ./...
+      - name: Vet
+        working-directory: backend
+        run: go vet ./...
+
+  production-package:
+    name: Production package policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            backend/go.sum
+            database/go.sum
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+      - name: Verify production policy
+        run: deploy/production/scripts/verify-offline.sh
+      - name: Build a non-deployable CI fixture
+        env:
+          RELEASE_VERSION: 0.0.0-ci
+          SOURCE_DATE_EPOCH: "1784235600"
+          OUTPUT_DIR: /tmp/finance-ci-release
+          TARGET_ARCH: amd64
+          VITE_SUPABASE_URL: https://ci-validation.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_validation_000000000000000000
+          SKIP_NPM_CI: "true"
+        run: deploy/production/build-release.sh
+      - name: Verify release checksums and manifest
+        run: |
+          cd /tmp/finance-ci-release
+          sha256sum --check SHA256SUMS
+          python3 - <<'PY'
+          import json
+          import pathlib
+
+          manifest = json.loads(pathlib.Path("manifest.json").read_text(encoding="utf-8"))
+          assert manifest["releaseVersion"] == "0.0.0-ci"
+          assert manifest["target"] == {"arch": "amd64", "cgo": False, "os": "linux"}
+          assert manifest["databaseMigrationVersion"] == 4
+          PY
