@@ -3,3 +3,11 @@ finance.db
 *.sqlite3
 __pycache__/
 .DS_Store
+.env
+.env.*
+!.env.example
+frontend/node_modules/
+frontend/dist/
+backend/bin/
+backend/api
+backend/coverage.out

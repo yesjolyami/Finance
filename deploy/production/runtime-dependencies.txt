@@ -1,0 +1,34 @@
+Finance production runtime dependency inventory
+================================================
+
+Production build toolchain:
+- Go compiler: 1.26.5
+- Node.js: 24.14.0
+- npm: 11.9.0
+
+Application build inputs (pinned by repository lock files):
+- Go module compatibility baseline: 1.24.0
+- github.com/golang-jwt/jwt/v5: 5.2.2
+- github.com/google/uuid: 1.6.0
+- github.com/jackc/pgx/v5: 5.7.6
+- golang.org/x/text: 0.24.0
+- React: 19.2.7
+- React DOM: 19.2.7
+- @supabase/supabase-js: 2.110.6
+- TypeScript: 5.9.3
+- Vite: 8.1.4
+- Vitest: 4.1.10
+- goose migration tool: 3.24.3
+
+Host/runtime contract:
+- Linux amd64 or arm64
+- systemd with the hardening directives used by finance-api.service
+- nginx 1.24.x
+- PostgreSQL server 17.x
+- PostgreSQL client tools matching the server major version
+- age 1.2.x for encrypted operational backups
+- curl 8.x and Python 3.11+ for offline verification/smoke tooling
+
+The Go API binary is built with CGO_ENABLED=0 and has no shared-library
+runtime dependency. Exact transitive Go and npm dependencies are recorded in
+backend/go.sum, database/go.sum and frontend/package-lock.json.

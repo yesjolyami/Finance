@@ -17,7 +17,7 @@
           <span class="brand-mark">₽</span>
           <div>
             <strong>Мои финансы</strong>
-            <small>Локальный учет</small>
+            <small>Личный учет</small>
           </div>
         </div>
 
@@ -25,21 +25,18 @@
           <a href="#overview">Обзор</a>
           <a href="#accounts">Счета</a>
           <a href="#entry">Операции</a>
+          <a href="#goals">Цели</a>
+          <a href="#debts">Долги</a>
           <a href="#stats">Статистика</a>
           <a href="#categories">Категории</a>
         </nav>
-
-        <div class="local-note">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>SQLite хранится локально: <code>finance.db</code></span>
-        </div>
       </aside>
 
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Personal ledger</p>
-            <h1>Финансовая панель</h1>
+            <p class="eyebrow">Мой месяц</p>
+            <h1>Деньги</h1>
           </div>
 
           <div class="topbar-actions">
@@ -58,14 +55,14 @@
             <label class="field compact export-field">
               <span>Экспорт</span>
               <select id="exportFormat" aria-label="Формат экспорта">
-                <option value="csv">CSV для Excel/Numbers</option>
-                <option value="png">PNG отчет</option>
-                <option value="json">JSON база</option>
+                <option value="csv">CSV таблица</option>
+                <option value="png">PNG картинка</option>
+                <option value="json">JSON резерв</option>
               </select>
             </label>
-            <button class="button ghost" id="exportButton" type="button">Скачать</button>
+            <button class="button ghost" id="exportButton" type="button">Экспорт</button>
             <label class="button ghost file-button" for="importFile">
-              Импорт
+              Восстановить
               <input id="importFile" type="file" accept="application/json" />
             </label>
           </div>
@@ -74,12 +71,121 @@
         <section class="accounts-strip" id="accounts" aria-label="Счета">
           <div class="section-title">
             <div>
-              <p class="eyebrow">Accounts</p>
-              <h2>Счета</h2>
+              <p class="eyebrow">Куда смотрим</p>
+              <h2>Счета и накопления</h2>
             </div>
-            <span id="accountScopeLabel">Показаны все счета</span>
+            <div class="account-scope-actions">
+              <span id="accountScopeLabel">Все счета</span>
+              <button class="button ghost" id="selectedAccountHistory" type="button" hidden>
+                История счета
+              </button>
+            </div>
           </div>
+
+          <div class="accounts-overview" aria-label="Общий баланс по счетам">
+            <article class="account-overview-card total">
+              <span>Во всех банках</span>
+              <strong id="totalAccountsBalance">0 ₽</strong>
+              <small>На конец выбранного месяца</small>
+            </article>
+            <article class="account-overview-card savings">
+              <span>В накоплениях</span>
+              <strong id="totalSavingsBalance">0 ₽</strong>
+              <small id="savingsAccountsHint">Персональные счета</small>
+            </article>
+            <div class="bank-totals" id="bankTotals" aria-label="Баланс по банкам"></div>
+          </div>
+
           <div class="account-grid" id="accountGrid"></div>
+
+          <details class="account-settings" id="accountSettings">
+            <summary>
+              <span>
+                <strong>Настроить счета</strong>
+                <small>Добавить банк, накопительный счет или изменить существующий</small>
+              </span>
+              <span class="summary-action" aria-hidden="true">Открыть</span>
+            </summary>
+
+            <div class="account-settings-grid">
+              <form class="account-form" id="accountForm">
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Название счета</span>
+                    <input
+                      id="accountName"
+                      name="name"
+                      type="text"
+                      maxlength="48"
+                      placeholder="Например: Накопления Рины"
+                      autocomplete="off"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Тип</span>
+                    <select id="accountKind" name="kind">
+                      <option value="regular">Основной счет</option>
+                      <option value="savings">Накопительный</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Банк</span>
+                    <input
+                      id="accountBank"
+                      name="bank"
+                      type="text"
+                      maxlength="48"
+                      placeholder="Т-Банк, Сбер, ВТБ"
+                      autocomplete="organization"
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Владелец</span>
+                    <input
+                      id="accountOwner"
+                      name="owner"
+                      type="text"
+                      maxlength="48"
+                      placeholder="Рина или Валера"
+                      autocomplete="off"
+                    />
+                  </label>
+                </div>
+
+                <div class="account-form-footer">
+                  <label class="field color-field">
+                    <span>Цвет</span>
+                    <input id="accountColor" name="color" type="color" value="#5d704d" />
+                  </label>
+                  <label class="field" id="accountInitialBalanceField">
+                    <span>Начальный баланс</span>
+                    <input
+                      id="accountInitialBalance"
+                      name="initialBalance"
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="Можно пустым"
+                      autocomplete="off"
+                    />
+                  </label>
+                  <div class="form-actions account-form-actions">
+                    <button class="button secondary" id="accountSubmitButton" type="submit">
+                      Добавить счет
+                    </button>
+                    <button class="button ghost" id="cancelAccountEdit" type="button" hidden>
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <div class="account-management-list" id="accountManagementList"></div>
+            </div>
+          </details>
         </section>
 
         <section class="summary-grid" id="overview" aria-label="Сводка за месяц">
@@ -96,20 +202,157 @@
           <article class="metric">
             <span>Расходы</span>
             <strong id="summaryExpense">0 ₽</strong>
-            <small id="expenseHint">Средний расход: 0 ₽</small>
+            <small id="expenseHint">В среднем: 0 ₽</small>
           </article>
           <article class="metric">
-            <span>Лимит</span>
+            <span>Бюджет</span>
             <strong id="summaryBudget">0%</strong>
             <small id="budgetHint">Бюджеты по категориям</small>
           </article>
         </section>
 
+        <div class="focus-grid">
+          <section class="panel goals-panel" id="goals" aria-labelledby="goalsTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Копим</p>
+                <h2 id="goalsTitle">Цели</h2>
+              </div>
+            </div>
+
+            <form class="goal-form" id="goalForm">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Название</span>
+                  <input
+                    id="goalName"
+                    name="name"
+                    type="text"
+                    maxlength="48"
+                    placeholder="Отпуск, техника, ремонт"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Нужно всего</span>
+                  <input
+                    id="goalTarget"
+                    name="target"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Уже есть</span>
+                  <input
+                    id="goalSaved"
+                    name="saved"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="Можно пустым"
+                    autocomplete="off"
+                  />
+                </label>
+                <label class="field">
+                  <span>Дата цели</span>
+                  <input id="goalDate" name="targetDate" type="date" />
+                </label>
+              </div>
+
+              <div class="quick-category-grid">
+                <label class="field color-field">
+                  <span>Цвет</span>
+                  <input id="goalColor" name="color" type="color" value="#5d704d" />
+                </label>
+                <button class="button secondary" type="submit">Добавить цель</button>
+              </div>
+            </form>
+
+            <div class="goal-list" id="goalList"></div>
+          </section>
+
+          <section class="panel debts-panel" id="debts" aria-labelledby="debtsTitle">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Кто кому</p>
+                <h2 id="debtsTitle">Долги</h2>
+              </div>
+              <span class="pill" id="debtSummary">0 ₽</span>
+            </div>
+
+            <form class="debt-form" id="debtForm">
+              <div class="form-grid">
+                <label class="field">
+                  <span>Кто</span>
+                  <input
+                    id="debtPerson"
+                    name="person"
+                    type="text"
+                    maxlength="48"
+                    placeholder="Имя человека"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Тип</span>
+                  <select id="debtDirection" name="direction">
+                    <option value="owe_me">Мне должны</option>
+                    <option value="i_owe">Я должен</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Сумма</span>
+                  <input
+                    id="debtAmount"
+                    name="amount"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Вернуть до</span>
+                  <input id="debtDueDate" name="dueDate" type="date" />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Комментарий</span>
+                <input
+                  id="debtNote"
+                  name="note"
+                  type="text"
+                  maxlength="160"
+                  placeholder="За что долг"
+                  autocomplete="off"
+                />
+              </label>
+
+              <button class="button secondary" type="submit">Добавить долг</button>
+            </form>
+
+            <div class="debt-list" id="debtList"></div>
+          </section>
+        </div>
+
         <div class="workspace-grid">
           <section class="panel entry-panel" id="entry" aria-labelledby="entryTitle">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Ledger</p>
+                <p class="eyebrow">Добавить</p>
                 <h2 id="entryTitle">Новая операция</h2>
               </div>
             </div>
@@ -123,6 +366,10 @@
                 <label>
                   <input type="radio" name="type" value="income" />
                   <span>Доход</span>
+                </label>
+                <label>
+                  <input type="radio" name="type" value="transfer" />
+                  <span>Перевод</span>
                 </label>
               </div>
 
@@ -147,12 +394,16 @@
 
               <div class="form-grid">
                 <label class="field">
-                  <span>Счет</span>
+                  <span id="accountSelectLabel">Счет</span>
                   <select id="accountSelect" name="accountId" required></select>
                 </label>
-                <label class="field">
+                <label class="field" id="categoryField">
                   <span>Категория</span>
                   <select id="categorySelect" name="categoryId" required></select>
+                </label>
+                <label class="field" id="toAccountField" hidden>
+                  <span>На счет</span>
+                  <select id="toAccountSelect" name="toAccountId"></select>
                 </label>
               </div>
 
@@ -168,7 +419,14 @@
                 />
               </label>
 
-              <button class="button primary" type="submit">Добавить</button>
+              <div class="form-actions">
+                <button class="button primary" id="transactionSubmitButton" type="submit">
+                  Добавить
+                </button>
+                <button class="button ghost" id="cancelTransactionEdit" type="button" hidden>
+                  Отмена
+                </button>
+              </div>
             </form>
 
             <form
@@ -181,7 +439,7 @@
                   <strong id="quickCategoryTitle">Своя категория</strong>
                   <span id="quickCategoryTypeBadge">Для расходов</span>
                 </div>
-                <small>Создайте один раз, дальше она появится в списке.</small>
+                <small>Появится в списке сразу.</small>
               </div>
 
               <div class="quick-category-grid">
@@ -217,15 +475,64 @@
 
               <button class="button secondary" type="submit">Добавить категорию</button>
             </form>
+
+            <form class="balance-form" id="balanceForm" aria-labelledby="balanceAdjustTitle">
+              <div class="quick-category-copy">
+                <div>
+                  <strong id="balanceAdjustTitle">Баланс вручную</strong>
+                  <span>Для любого счета</span>
+                </div>
+                <small>Зафиксирует фактический остаток на выбранную дату.</small>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Счет</span>
+                  <select id="balanceAccountSelect" name="accountId" required></select>
+                </label>
+                <label class="field">
+                  <span>Новый баланс</span>
+                  <input
+                    id="targetBalanceInput"
+                    name="balance"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    autocomplete="off"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Дата</span>
+                  <input id="balanceDateInput" name="date" type="date" required />
+                </label>
+                <label class="field">
+                  <span>Комментарий</span>
+                  <input
+                    id="balanceNoteInput"
+                    name="note"
+                    type="text"
+                    maxlength="160"
+                    placeholder="Например: начальный баланс"
+                    autocomplete="off"
+                  />
+                </label>
+              </div>
+
+              <button class="button secondary" type="submit">Выставить баланс</button>
+            </form>
           </section>
 
           <section class="panel stats-panel" id="stats" aria-labelledby="statsTitle">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Analytics</p>
+                <p class="eyebrow">Итоги</p>
                 <h2 id="statsTitle">Статистика</h2>
               </div>
-              <span class="pill" id="savingsRate">0% сохранено</span>
+              <span class="pill" id="savingsRate">0% осталось</span>
             </div>
 
             <div class="chart-wrap">
@@ -233,6 +540,14 @@
             </div>
 
             <div class="split-stats">
+              <div class="insights-block">
+                <h3>Главное</h3>
+                <div class="insight-list" id="insightList"></div>
+              </div>
+              <div class="account-report-block">
+                <h3>По счетам</h3>
+                <div class="account-report-list" id="accountReportList"></div>
+              </div>
               <div>
                 <h3>Расходы по категориям</h3>
                 <div class="bars-list" id="categoryBreakdown"></div>
@@ -247,7 +562,7 @@
           <section class="panel categories-panel" id="categories" aria-labelledby="categoriesTitle">
             <div class="panel-heading">
               <div>
-                <p class="eyebrow">Structure</p>
+                <p class="eyebrow">Настроить</p>
                 <h2 id="categoriesTitle">Категории</h2>
               </div>
             </div>
@@ -292,7 +607,14 @@
                 </label>
               </div>
 
-              <button class="button secondary" type="submit">Создать категорию</button>
+              <div class="form-actions">
+                <button class="button secondary" id="categorySubmitButton" type="submit">
+                  Создать категорию
+                </button>
+                <button class="button ghost" id="cancelCategoryEdit" type="button" hidden>
+                  Отмена
+                </button>
+              </div>
             </form>
 
             <div class="category-list" id="categoryList"></div>
@@ -301,7 +623,7 @@
           <section class="panel ledger-panel" aria-labelledby="ledgerTitle">
             <div class="panel-heading ledger-heading">
               <div>
-                <p class="eyebrow">History</p>
+                <p class="eyebrow">История</p>
                 <h2 id="ledgerTitle">Операции</h2>
               </div>
               <div class="ledger-filters" aria-label="Фильтры операций">
@@ -312,6 +634,7 @@
                   <option value="all">Все</option>
                   <option value="expense">Расходы</option>
                   <option value="income">Доходы</option>
+                  <option value="transfer">Переводы</option>
                 </select>
                 <select id="categoryFilter" aria-label="Фильтр по категории">
                   <option value="all">Все категории</option>
@@ -330,6 +653,64 @@
         </div>
       </main>
     </div>
+
+    <dialog class="account-history-dialog" id="accountHistoryDialog" aria-labelledby="accountHistoryTitle">
+      <div class="account-history-shell">
+        <header class="account-history-header">
+          <div class="account-history-identity">
+            <span class="account-history-swatch" id="accountHistorySwatch" aria-hidden="true"></span>
+            <div>
+              <p class="eyebrow">История счета</p>
+              <h2 id="accountHistoryTitle">Счет</h2>
+              <small id="accountHistoryMeta"></small>
+            </div>
+          </div>
+          <button
+            class="button ghost account-history-close"
+            id="closeAccountHistory"
+            type="button"
+            aria-label="Закрыть историю счета"
+          >
+            Закрыть
+          </button>
+        </header>
+
+        <section class="account-history-balance" aria-label="Баланс счета">
+          <div>
+            <span id="accountHistoryBalanceLabel">Баланс</span>
+            <strong id="accountHistoryBalance">0 ₽</strong>
+          </div>
+          <button class="button secondary" id="historySetBalance" type="button">
+            Выставить баланс
+          </button>
+        </section>
+
+        <div class="account-history-toolbar">
+          <label class="field compact">
+            <span>Период</span>
+            <select id="accountHistoryPeriod" aria-label="Период истории счета">
+              <option value="all">За всё время</option>
+            </select>
+          </label>
+          <div class="account-history-summary" aria-label="Итоги выбранного периода">
+            <article>
+              <span>Поступило</span>
+              <strong id="accountHistoryIncome">0 ₽</strong>
+            </article>
+            <article>
+              <span>Списано</span>
+              <strong id="accountHistoryExpense">0 ₽</strong>
+            </article>
+            <article>
+              <span>Операций</span>
+              <strong id="accountHistoryCount">0</strong>
+            </article>
+          </div>
+        </div>
+
+        <div class="account-history-list" id="accountHistoryList"></div>
+      </div>
+    </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/app.js" defer></script>

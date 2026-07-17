@@ -1,0 +1,100 @@
+name: Build release artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Semantic release version without a leading v
+        required: true
+        type: string
+      architecture:
+        description: Linux target architecture
+        required: true
+        default: amd64
+        type: choice
+        options:
+          - amd64
+          - arm64
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: 1.26.5
+  NODE_VERSION: 24.14.0
+
+jobs:
+  quality:
+    name: Required CI gate
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: Linux ${{ inputs.architecture }}
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout the selected revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            backend/go.sum
+            database/go.sum
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+      - name: Verify production policy
+        run: deploy/production/scripts/verify-offline.sh
+      - name: Build release tree
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          TARGET_ARCH: ${{ inputs.architecture }}
+          VITE_SUPABASE_URL: ${{ vars.FINANCE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.FINANCE_SUPABASE_PUBLISHABLE_KEY }}
+          SKIP_NPM_CI: "true"
+        run: |
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$GITHUB_SHA")
+          OUTPUT_DIR="/tmp/finance-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          export SOURCE_DATE_EPOCH OUTPUT_DIR
+          deploy/production/build-release.sh
+          cd "$OUTPUT_DIR"
+          sha256sum --check SHA256SUMS
+      - name: Create deterministic archive
+        id: archive
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          TARGET_ARCH: ${{ inputs.architecture }}
+        run: |
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$GITHUB_SHA")
+          OUTPUT_DIR="/tmp/finance-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          SHORT_SHA=${GITHUB_SHA::12}
+          ARCHIVE="finance-${RELEASE_VERSION}-linux-${TARGET_ARCH}-${SHORT_SHA}.tar.gz"
+          tar --sort=name \
+            --mtime="@${SOURCE_DATE_EPOCH}" \
+            --owner=0 --group=0 --numeric-owner \
+            -C "$OUTPUT_DIR" -cf - . | gzip -n -9 > "$RUNNER_TEMP/$ARCHIVE"
+          cd "$RUNNER_TEMP"
+          sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+          echo "name=$ARCHIVE" >> "$GITHUB_OUTPUT"
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.archive.outputs.name }}
+          path: |
+            ${{ runner.temp }}/${{ steps.archive.outputs.name }}
+            ${{ runner.temp }}/${{ steps.archive.outputs.name }}.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          include-hidden-files: false
