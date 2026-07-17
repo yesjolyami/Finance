@@ -44,6 +44,30 @@ func (service *Service) GetMe(ctx context.Context, subject string) (User, error)
 	return service.repository.GetMe(ctx, subject)
 }
 
+func (service *Service) UpdateProfile(ctx context.Context, subject string, input UpdateProfileInput) (User, error) {
+	if input.DisplayName == nil && input.UsageMode == nil && input.OnboardingCompleted == nil && input.PrimaryCurrencyCode == nil {
+		return User{}, ErrInvalid
+	}
+	if input.DisplayName != nil {
+		value := strings.TrimSpace(*input.DisplayName)
+		if !validText(value, 120) {
+			return User{}, ErrInvalid
+		}
+		input.DisplayName = &value
+	}
+	if input.UsageMode != nil {
+		value := strings.TrimSpace(*input.UsageMode)
+		if value != "personal" && value != "couple" && value != "family" && value != "custom" {
+			return User{}, ErrInvalid
+		}
+		input.UsageMode = &value
+	}
+	if input.PrimaryCurrencyCode != nil && *input.PrimaryCurrencyCode != "RUB" {
+		return User{}, ErrInvalid
+	}
+	return service.repository.UpdateProfile(ctx, subject, input)
+}
+
 func (service *Service) ListHouseholds(ctx context.Context, subject string) ([]Household, error) {
 	return service.repository.ListHouseholds(ctx, subject)
 }

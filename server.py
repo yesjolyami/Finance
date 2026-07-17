@@ -21,6 +21,7 @@ PUBLIC_FILES = {
     "/index.html": "index.html",
     "/styles.css": "styles.css",
     "/app.js": "app.js",
+    "/manifest.webmanifest": "manifest.webmanifest",
 }
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -1587,10 +1588,11 @@ class FinanceHandler(BaseHTTPRequestHandler):
             debt_payments = con.execute(
                 "SELECT * FROM debt_payments ORDER BY date DESC, created_at DESC"
             ).fetchall()
-        filename = f"finance-backup-{datetime.now().strftime('%Y-%m-%d')}.json"
+        filename = f"monetka-backup-{datetime.now().strftime('%Y-%m-%d')}.json"
         self.send_json(
             200,
             {
+                "application": "Монетка",
                 "version": 5,
                 "exportedAt": now_iso(),
                 "accounts": [account_to_json(row) for row in accounts],
@@ -1784,12 +1786,12 @@ class FinanceHandler(BaseHTTPRequestHandler):
 def main():
     init_db()
     server = ThreadingHTTPServer((HOST, PORT), FinanceHandler)
-    print(f"Finance app is running on http://{HOST}:{PORT}")
+    print(f"Монетка запущена на http://{HOST}:{PORT}")
     print(f"SQLite database: {DB_PATH}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopping finance app")
+        print("\nМонетка остановлена")
     finally:
         server.server_close()
 

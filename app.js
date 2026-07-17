@@ -890,7 +890,7 @@ async function exportJsonBackup() {
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json;charset=utf-8",
     });
-    downloadBlob(blob, `finance-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    downloadBlob(blob, `monetka-backup-${new Date().toISOString().slice(0, 10)}.json`);
     showToast("JSON-бэкап скачан");
   } catch (error) {
     showToast(error.message, "error");
@@ -920,7 +920,7 @@ function exportCsv() {
   const csv = "\ufeff" + [header, ...csvRows].map((row) => row.map(csvCell).join(";")).join("\n");
   downloadBlob(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    `finance-${state.month}${accountFileSuffix()}.csv`
+    `monetka-${state.month}${accountFileSuffix()}.csv`
   );
   showToast(rows.length ? "CSV скачан" : "CSV скачан, операций за месяц нет");
 }
@@ -970,7 +970,7 @@ function exportPngReport() {
 
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, height);
-  drawReportText(ctx, "Мои финансы", 64, 70, 22, mutedColor, 800);
+  drawReportText(ctx, "Монетка", 64, 70, 22, mutedColor, 800);
   drawReportText(ctx, `Отчет за ${formatMonthLong(state.month)}`, 64, 118, 48, inkColor, 900);
   drawReportText(ctx, getAccountScopeLabel(), 64, 150, 20, mutedColor, 700);
 
@@ -1066,7 +1066,7 @@ function exportPngReport() {
       showToast("Не удалось создать PNG", "error");
       return;
     }
-    downloadBlob(blob, `finance-report-${state.month}${accountFileSuffix()}.png`);
+    downloadBlob(blob, `monetka-report-${state.month}${accountFileSuffix()}.png`);
     showToast("PNG-отчет скачан");
   }, "image/png");
 }

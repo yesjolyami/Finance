@@ -84,13 +84,13 @@ export function AuthForm({ notice, offline, supabase }: AuthFormProps) {
   return (
     <section className="auth-card" aria-labelledby="auth-title">
       <div className="auth-card__intro">
-        <p className="eyebrow">Защищённый вход</p>
+        <p className="eyebrow">Монетка · защищённый вход</p>
         <h1 id="auth-title">
           {mode === "signIn" && "Ваши финансы начинаются с личного пространства"}
           {mode === "signUp" && "Создайте защищённый профиль"}
           {mode === "reset" && "Восстановите доступ"}
         </h1>
-        <p className="lead">Авторизация выполняется Supabase, а данные семейных пространств доступны только через Go API.</p>
+        <p className="lead">Добро пожаловать в «Монетку». Ваши данные доступны только после защищённой авторизации.</p>
       </div>
 
       <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>

@@ -1,6 +1,18 @@
 export interface UserProfile {
   id: string;
   displayName: string;
+  usageMode: UsageMode;
+  onboardingCompleted: boolean;
+  primaryCurrencyCode: "RUB";
+}
+
+export type UsageMode = "personal" | "couple" | "family" | "custom";
+
+export interface UserProfilePatch {
+  displayName?: string;
+  usageMode?: UsageMode;
+  onboardingCompleted?: boolean;
+  primaryCurrencyCode?: "RUB";
 }
 
 export type HouseholdRole = "owner" | "admin" | "member";
@@ -99,10 +111,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseUser(value: unknown): UserProfile | null {
-  if (!isRecord(value) || typeof value.id !== "string" || !uuidPattern.test(value.id) || typeof value.displayName !== "string") {
+  if (
+    !isRecord(value) || typeof value.id !== "string" || !uuidPattern.test(value.id) ||
+    typeof value.displayName !== "string" ||
+    (value.usageMode !== "personal" && value.usageMode !== "couple" && value.usageMode !== "family" && value.usageMode !== "custom") ||
+    typeof value.onboardingCompleted !== "boolean" || value.primaryCurrencyCode !== "RUB"
+  ) {
     return null;
   }
-  return { id: value.id, displayName: value.displayName };
+  return {
+    id: value.id,
+    displayName: value.displayName,
+    usageMode: value.usageMode,
+    onboardingCompleted: value.onboardingCompleted,
+    primaryCurrencyCode: value.primaryCurrencyCode,
+  };
 }
 
 function parseHousehold(value: unknown): Household | null {
@@ -179,7 +202,7 @@ export class APIClient {
   private readonly timeoutMilliseconds: number;
 
   public constructor(private readonly options: APIClientOptions) {
-    this.fetcher = options.fetcher ?? fetch;
+    this.fetcher = options.fetcher ?? globalThis.fetch.bind(globalThis);
     this.timeoutMilliseconds = options.timeoutMilliseconds ?? 8_000;
   }
 
@@ -189,6 +212,10 @@ export class APIClient {
 
   public async listHouseholds(signal?: AbortSignal): Promise<Household[]> {
     return (await this.requestJSON("/api/v1/households", parseHouseholdList, { method: "GET" }, signal)).data;
+  }
+
+  public async updateProfile(patch: UserProfilePatch, signal?: AbortSignal): Promise<UserProfile> {
+    return (await this.requestJSON("/api/v1/me", parseUser, { method: "PATCH", body: patch }, signal)).data;
   }
 
   public async createHousehold(name: string, idempotencyKey: string, signal?: AbortSignal): Promise<Household> {

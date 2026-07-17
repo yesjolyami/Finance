@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import { APIClient, APIError } from "./api";
 
-const user = { id: "11000000-0000-4000-8000-000000000001", displayName: "Пользователь" };
+const user = {
+  id: "11000000-0000-4000-8000-000000000001",
+  displayName: "Пользователь",
+  usageMode: "personal",
+  onboardingCompleted: false,
+  primaryCurrencyCode: "RUB",
+} as const;
 const household = {
   id: "22000000-0000-4000-8000-000000000001",
   name: "Дом",
@@ -36,6 +42,22 @@ function abortAwarePendingFetch(): typeof fetch {
 }
 
 describe("APIClient", () => {
+  it("binds the browser fetch implementation to its global object", async () => {
+    const originalFetch = globalThis.fetch;
+    const browserFetch = vi.fn(function (this: unknown) {
+      if (this !== globalThis) throw new TypeError("Illegal invocation");
+      return Promise.resolve(jsonResponse({ user, households: [] }));
+    }) as typeof fetch;
+    globalThis.fetch = browserFetch;
+    try {
+      const client = new APIClient({ apiBaseUrl: "", sessionProvider: sessionProvider(["token"]) });
+      await expect(client.bootstrap()).resolves.toEqual({ user, households: [] });
+      expect(browserFetch).toHaveBeenCalledOnce();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("reads the current official session before every request and omits ambient credentials", async () => {
     const sessions = sessionProvider(["rotated-token-one", "rotated-token-two"]);
     const authorizations: string[] = [];
@@ -61,6 +83,7 @@ describe("APIClient", () => {
       jsonResponse({ user, households: [household] }),
       jsonResponse({ households: [household] }),
       jsonResponse(household, 201),
+      jsonResponse({ ...user, displayName: "Матвей", onboardingCompleted: true }),
     ];
     const fetcher = vi.fn<typeof fetch>(async () => responses.shift() ?? jsonResponse({}, 500));
     const client = new APIClient({ apiBaseUrl: "", sessionProvider: sessions, fetcher });
@@ -68,9 +91,11 @@ describe("APIClient", () => {
     await expect(client.bootstrap()).resolves.toEqual({ user, households: [household] });
     await expect(client.listHouseholds()).resolves.toEqual([household]);
     await expect(client.createHousehold("Дом", "request-key")).resolves.toEqual(household);
+    await expect(client.updateProfile({ displayName: "Матвей", onboardingCompleted: true })).resolves.toMatchObject({ displayName: "Матвей", onboardingCompleted: true });
 
     expect(fetcher.mock.calls[0]?.[1]?.body).toBe("{}");
     expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get("Idempotency-Key")).toBe("request-key");
+    expect(fetcher.mock.calls[3]?.[1]?.method).toBe("PATCH");
   });
 
   it.each(["text/plain", "text/application/json-evil", "application/jsonp"])(

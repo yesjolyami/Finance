@@ -16,6 +16,7 @@ interface FinanceWorkspaceProps {
   household: Household;
   offline: boolean;
   onSessionExpired: () => void;
+  initialSection?: FinanceSection;
 }
 
 const sections: ReadonlyArray<{ id: FinanceSection; label: string; short: string; ownerOnly?: boolean }> = [
@@ -30,9 +31,9 @@ export function financeSectionsForRole(role: Household["role"]): ReadonlyArray<{
   return sections.filter((item) => !item.ownerOnly || role === "owner");
 }
 
-export function FinanceWorkspace({ api, household, offline, onSessionExpired }: FinanceWorkspaceProps) {
+export function FinanceWorkspace({ api, household, offline, onSessionExpired, initialSection = "dashboard" }: FinanceWorkspaceProps) {
   const finance = useMemo(() => new FinanceAPI(api), [api]);
-  const [section, setSection] = useState<FinanceSection>("dashboard");
+  const [section, setSection] = useState<FinanceSection>(initialSection);
   const [financeRevision, setFinanceRevision] = useState(0);
   const visibleSections = financeSectionsForRole(household.role);
 

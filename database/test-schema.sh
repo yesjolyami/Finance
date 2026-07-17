@@ -34,6 +34,7 @@ psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -Atc \
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/backup_v5_import_down_fixture.sql
 
 go tool goose -dir migrations postgres "$DATABASE_TEST_URL" down
+go tool goose -dir migrations postgres "$DATABASE_TEST_URL" down
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -Atc \
   "SELECT (to_regclass('public.backup_v5_import_previews') IS NULL), (to_regclass('public.backup_v5_import_runs') IS NULL)" \
   | grep -qx 't|t'
@@ -44,11 +45,12 @@ psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -Atc \
   "SELECT (SELECT version FROM accounts WHERE id = 'fd000000-0000-4000-8000-000000000001'), (SELECT version FROM categories WHERE id = 'fd100000-0000-4000-8000-000000000001'), (SELECT version FROM transactions WHERE id = 'fd200000-0000-4000-8000-000000000001')" \
   | grep -qx '41|42|43'
 
-go tool goose -dir migrations postgres "$DATABASE_TEST_URL" up-to 4
+go tool goose -dir migrations postgres "$DATABASE_TEST_URL" up-to 5
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -Atc \
   "SELECT (SELECT count(*) FROM backup_v5_import_previews), (SELECT count(*) FROM backup_v5_import_runs), (SELECT version FROM accounts WHERE id = 'fd000000-0000-4000-8000-000000000001'), (SELECT version FROM categories WHERE id = 'fd100000-0000-4000-8000-000000000001'), (SELECT version FROM transactions WHERE id = 'fd200000-0000-4000-8000-000000000001'), (SELECT count(*) FROM audit_log WHERE id = 'fe000000-0000-4000-8000-000000000001')" \
   | grep -qx '0|0|41|42|43|1'
 
+go tool goose -dir migrations postgres "$DATABASE_TEST_URL" down
 go tool goose -dir migrations postgres "$DATABASE_TEST_URL" down
 
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/finance_core_down_fixture.sql
@@ -94,3 +96,4 @@ psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/schema_constraints.sql
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/household_invitations_constraints.sql
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/finance_core_idempotency_constraints.sql
 psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/backup_v5_import_control_constraints.sql
+psql "$DATABASE_TEST_URL" -v ON_ERROR_STOP=1 -f tests/onboarding_profiles_constraints.sql

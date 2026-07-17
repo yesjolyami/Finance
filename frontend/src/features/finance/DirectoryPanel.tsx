@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 
 import type { Household } from "../../lib/api";
 import { IdempotencyKeyManager } from "../../lib/idempotency";
-import type { Account, Category, CategoryType, DirectoryState, FinanceAPI } from "../../lib/financeApi";
+import type { Account, AccountType, Category, CategoryType, DirectoryState, FinanceAPI } from "../../lib/financeApi";
 import { canManageDirectories, runeLength } from "./financeModel";
 import { matchesDirectoryState, mergeUniqueByID, reconcileByID, safeFinanceError } from "./financeUI";
 
@@ -120,7 +120,7 @@ export function DirectoryPanel({ kind, finance, household, offline, onSessionExp
         <div className="directory-grid">
           {kind === "accounts" ? accounts.map((account) => (
             <article className="directory-card" key={account.id} data-archived={account.archivedAt !== null}>
-              <div className="directory-card__title"><input className="finance-color-swatch" type="color" value={account.color} disabled tabIndex={-1} aria-hidden="true" /><div><h4>{account.name}</h4><p>{account.accountType === "savings" ? "Накопительный" : "Обычный"}{account.bankLabel ? ` · ${account.bankLabel}` : ""}</p></div><span>v{account.version}</span></div>
+              <div className="directory-card__title"><input className="finance-color-swatch" type="color" value={account.color} disabled tabIndex={-1} aria-hidden="true" /><div><h4>{account.name}</h4><p>{account.accountType === "savings" ? "Накопительный" : account.accountType === "cash" ? "Наличные" : "Обычный"}{account.bankLabel ? ` · ${account.bankLabel}` : ""}</p></div><span>v{account.version}</span></div>
               <div className="directory-card__meta"><span>{account.currencyCode}</span>{account.isSystem && <span>Системный</span>}{account.archivedAt && <span>В архиве</span>}</div>
               {canManage && <div className="card-actions"><button type="button" onClick={() => setEditingAccount(account)} disabled={offline || account.isSystem || pendingID !== null}>Изменить</button><button type="button" onClick={() => void toggleAccount(account)} disabled={offline || account.isSystem || pendingID !== null}>{pendingID === account.id ? "Сохраняем…" : account.archivedAt ? "Восстановить" : "В архив"}</button></div>}
             </article>
@@ -152,7 +152,7 @@ interface EditorProps<T> {
 function AccountEditor({ finance, householdID, editing, offline, onSaved, onCancel, onMessage, onSessionExpired }: EditorProps<Account>) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(palette[0]);
-  const [accountType, setAccountType] = useState<"regular" | "savings">("regular");
+  const [accountType, setAccountType] = useState<AccountType>("regular");
   const [bankLabel, setBankLabel] = useState("");
   const [pending, setPending] = useState(false);
   const keys = useRef(new IdempotencyKeyManager());
@@ -183,7 +183,7 @@ function AccountEditor({ finance, householdID, editing, offline, onSaved, onCanc
     } catch (error) { if (!controller.signal.aborted) onMessage(safeFinanceError(error, onSessionExpired)); }
     finally { if (controllerRef.current === controller) controllerRef.current = null; setPending(false); }
   };
-  return <form className="directory-editor" onSubmit={(event) => void submit(event)}><div><p className="eyebrow">{editing ? "Редактирование" : "Новый счёт"}</p><h4>{editing ? editing.name : "Добавить счёт"}</h4></div><label>Название<input value={name} onChange={(event) => setName(event.target.value)} required disabled={pending || offline} /></label><label>Тип<select value={accountType} onChange={(event) => setAccountType(event.target.value as "regular" | "savings")} disabled={pending || offline}><option value="regular">Обычный</option><option value="savings">Накопительный</option></select></label><label>Банк<input value={bankLabel} onChange={(event) => setBankLabel(event.target.value)} maxLength={120} disabled={pending || offline} /></label><ColorPicker value={color} onChange={setColor} disabled={pending || offline} /><button className="primary-button" type="submit" disabled={pending || offline}>{pending ? "Сохраняем…" : editing ? "Сохранить" : "Создать"}</button>{editing && <button className="secondary-button" type="button" onClick={onCancel} disabled={pending}>Отмена</button>}</form>;
+  return <form className="directory-editor" onSubmit={(event) => void submit(event)}><div><p className="eyebrow">{editing ? "Редактирование" : "Новый счёт"}</p><h4>{editing ? editing.name : "Добавить счёт"}</h4></div><label>Название<input value={name} onChange={(event) => setName(event.target.value)} required disabled={pending || offline} /></label><label>Тип<select value={accountType} onChange={(event) => setAccountType(event.target.value as AccountType)} disabled={pending || offline}><option value="regular">Обычный</option><option value="savings">Накопительный</option><option value="cash">Наличные</option></select></label><label>Банк<input value={bankLabel} onChange={(event) => setBankLabel(event.target.value)} maxLength={120} disabled={pending || offline} /></label><ColorPicker value={color} onChange={setColor} disabled={pending || offline} /><button className="primary-button" type="submit" disabled={pending || offline}>{pending ? "Сохраняем…" : editing ? "Сохранить" : "Создать"}</button>{editing && <button className="secondary-button" type="button" onClick={onCancel} disabled={pending}>Отмена</button>}</form>;
 }
 
 function CategoryEditor({ finance, householdID, type, editing, offline, onSaved, onCancel, onMessage, onSessionExpired }: EditorProps<Category> & { type: CategoryType }) {

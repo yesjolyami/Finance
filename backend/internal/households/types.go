@@ -16,8 +16,18 @@ var (
 )
 
 type User struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"displayName"`
+	ID                  string `json:"id"`
+	DisplayName         string `json:"displayName"`
+	UsageMode           string `json:"usageMode"`
+	OnboardingCompleted bool   `json:"onboardingCompleted"`
+	PrimaryCurrencyCode string `json:"primaryCurrencyCode"`
+}
+
+type UpdateProfileInput struct {
+	DisplayName         *string
+	UsageMode           *string
+	OnboardingCompleted *bool
+	PrimaryCurrencyCode *string
 }
 
 type Household struct {
@@ -64,6 +74,7 @@ type CreateInvitationInput struct {
 type Repository interface {
 	Bootstrap(context.Context, string, *string) (BootstrapResult, error)
 	GetMe(context.Context, string) (User, error)
+	UpdateProfile(context.Context, string, UpdateProfileInput) (User, error)
 	ListHouseholds(context.Context, string) ([]Household, error)
 	CreateHousehold(context.Context, string, string, string) (Household, error)
 	GetHousehold(context.Context, string, string) (Household, error)
